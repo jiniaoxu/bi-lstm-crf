@@ -2,6 +2,7 @@ import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
+import numpy as np
 
 CHUNK_TAGS = ['B', 'I', 'S']
 
@@ -44,3 +45,10 @@ def process_data(corops_path, max_num_words=20000, max_sequence_len=1000):
     chunk = to_categorical(chunk)
 
     return data, chunk, word_index, chunk_index
+
+
+def sentence_to_vec(sentence, word_index, max_sequence_len=1000):
+    sentence = np.zeros((max_sequence_len,))
+    for word in list(sentence):
+        sentence[word_index[word]] = 1
+    return sentence

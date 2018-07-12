@@ -1,7 +1,6 @@
 from keras.layers import Input, Embedding, LSTM, Dense, Bidirectional, Dropout, TimeDistributed
 from keras.models import Model
 from keras_contrib.layers import CRF
-from process_data import CHUNK_TAGS
 import pickle
 
 """
@@ -13,6 +12,7 @@ import pickle
 class BiLSTMCRFModelConfigure:
 
     def __init__(self, word_index: dict
+                 , chunk_index: dict
                  , embed_dim=200
                  , bi_lstm_units=200
                  , max_sequence_len=1000
@@ -22,7 +22,7 @@ class BiLSTMCRFModelConfigure:
         self.bi_lstm_units = bi_lstm_units
         self.max_sequence_len = max_sequence_len
         self.max_num_words = max_num_words
-        self.tag_list = CHUNK_TAGS
+        self.chunk_index = chunk_index
 
     def build_model(self):
         num_words = min(self.max_num_words, len(self.word_index) + 1)
@@ -30,8 +30,8 @@ class BiLSTMCRFModelConfigure:
         embedded_sequences = Embedding(num_words, self.embed_dim, input_length=self.max_sequence_len)(sequence_input)
         x = Bidirectional(LSTM(self.bi_lstm_units // 2, return_sequences=True))(embedded_sequences)
         x = Dropout(0.2)(x)
-        x = TimeDistributed(Dense(len(self.tag_list) + 1))(x)
-        crf = CRF(len(self.tag_list) + 1, sparse_target=True)
+        x = TimeDistributed(Dense(len(self.chunk_index) + 1))(x)
+        crf = CRF(len(self.chunk_index) + 1, sparse_target=True)
         x = crf(x)
 
         model = Model([sequence_input], x)
@@ -51,4 +51,4 @@ def load_model(weights_path, model_config_path):
         model_builder: BiLSTMCRFModelConfigure = pickle.load(f)
     model = model_builder.build_model()
     model.load_weights(weights_path)
-    return model, model_builder.word_index
+    return model, model_builder.word_index, model_builder.chunk_index

@@ -17,7 +17,7 @@ if __name__ == '__main__':
     val_split = args.val_split
     save_dir = args.save_dir
 
-    x, y, word_index, _ = process_data(data_path)
+    x, y, word_index, chunk_index = process_data(data_path)
 
     indices = np.arange(x.shape[0])
     np.random.shuffle(indices)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     x_val = x[-num_validation_samples:]
     y_val = y[-num_validation_samples:]
 
-    model_configure = BiLSTMCRFModelConfigure(word_index)
+    model_configure = BiLSTMCRFModelConfigure(word_index, chunk_index)
     model = model_configure.build_model()
     model.summary()
 
@@ -44,4 +44,4 @@ if __name__ == '__main__':
     save_model(model_configure
                , os.path.join(save_dir, 'model.cfg')
                , model
-               , os.path.join(save_dir, 'crf.h5'))
+               , os.path.join(save_dir, 'model.final.h5'))
