@@ -31,7 +31,7 @@ if __name__ == '__main__':
     x_val = x[-num_validation_samples:]
     y_val = y[-num_validation_samples:]
 
-    model_configure = BiLSTMCRFModelConfigure(word_index, chunk_index)
+    model_configure = BiLSTMCRFModelConfigure(len(word_index) + 1, len(chunk_index) + 1)
     model = model_configure.build_model()
     model.summary()
 
@@ -44,4 +44,6 @@ if __name__ == '__main__':
     save_model(model_configure
                , os.path.join(save_dir, 'model.cfg')
                , model
-               , os.path.join(save_dir, 'model.final.h5'))
+               , os.path.join(save_dir, 'model.final.h5')
+               , (word_index, chunk_index)
+               , os.path.join(save_dir, 'model.dict'))

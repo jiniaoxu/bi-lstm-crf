@@ -24,7 +24,7 @@ def _parse_data(fh):
     return sent, chunk
 
 
-def process_data(corops_path, max_num_words=20000, max_sequence_len=1000):
+def process_data(corops_path, max_num_words=20000, max_sequence_len=100):
     sent, chunk = _parse_data(open(corops_path, 'r', encoding='UTF-8'))
     tokenizer = Tokenizer(num_words=max_num_words)
     tokenizer.fit_on_texts(sent)
