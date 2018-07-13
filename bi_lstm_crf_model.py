@@ -1,7 +1,10 @@
+import pickle
+
 from keras.layers import Input, Embedding, LSTM, Dense, Bidirectional, Dropout, TimeDistributed
 from keras.models import Model
 from keras_contrib.layers import CRF
-import pickle
+
+from process_data import *
 
 """
 使用keras实现的中文分词，原理基于论文：https://arxiv.org/abs/1508.01991
@@ -13,7 +16,7 @@ class BiLSTMCRFModelConfigure:
 
     def __init__(self, vocab_size: int
                  , chunk_size: int
-                 , embed_dim=200
+                 , embed_dim=300
                  , bi_lstm_units=200
                  , max_sequence_len=100
                  , max_num_words=20000):
@@ -24,11 +27,20 @@ class BiLSTMCRFModelConfigure:
         self.max_num_words = max_num_words
         self.chunk_size = chunk_size
 
-    def build_model(self):
+    def build_model(self, embeddings_matrix=None):
         num_words = min(self.max_num_words, self.vocab_size)
         word_input = Input(shape=(self.max_sequence_len,), dtype='int32', name="word_input")
-        word_emb = Embedding(num_words, self.embed_dim, input_length=self.max_sequence_len, name="word_emb")(word_input)
-        bilstm = Bidirectional(LSTM(self.bi_lstm_units // 2, return_sequences=True))(word_emb)
+
+        if embeddings_matrix is not None:
+            word_embedding = Embedding(num_words, self.embed_dim,
+                                       input_length=self.max_sequence_len,
+                                       weights=[embeddings_matrix],
+                                       trainable=False,
+                                       name='word_emb')(word_input)
+        else:
+            word_embedding = Embedding(num_words, self.embed_dim, input_length=self.max_sequence_len, name="word_emb") \
+                (word_input)
+        bilstm = Bidirectional(LSTM(self.bi_lstm_units // 2, return_sequences=True))(word_embedding)
         x = Dropout(0.2)(bilstm)
         dense = TimeDistributed(Dense(self.chunk_size))(x)
         crf = CRF(self.chunk_size, sparse_target=False)
@@ -53,11 +65,14 @@ def save_model(model_config: BiLSTMCRFModelConfigure
     model.save(model_path)
 
 
-def load_model(weights_path, model_config_path, dict_path):
+def load_model(weights_path, model_config_path, dict_path, embedding_file_path=None):
     with open(model_config_path, 'rb') as f:
         model_builder: BiLSTMCRFModelConfigure = pickle.load(f)
     with open(dict_path, 'rb') as f:
         vocab, chunk = pickle.load(f)
-    model = model_builder.build_model()
+    embedding_matrix = None
+    if embedding_file_path is not None:
+        embedding_matrix = create_embedding_matrix(get_embedding_index(embedding_file_path), vocab, model_builder)
+    model = model_builder.build_model(embedding_matrix)
     model.load_weights(weights_path)
     return model, model_builder, vocab, chunk

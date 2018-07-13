@@ -1,9 +1,11 @@
+import os
+
 import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
 import numpy as np
-from bi_lstm_crf_model import BiLSTMCRFModelConfigure
+from bi_lstm_crf_model import *
 
 CHUNK_TAGS = ['B', 'I', 'S']
 
@@ -48,7 +50,30 @@ def process_data(corops_path, max_num_words=20000, max_sequence_len=100):
     return data, chunk, word_index, chunk_index
 
 
-def sentence_to_vec(sentence, word_index, model_config: BiLSTMCRFModelConfigure):
+def get_embedding_index(embedding_file):
+    embedding_index = {}
+    with open(os.path.join(embedding_file), encoding='UTF-8') as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype=np.float32)
+            embedding_index[word] = coefs
+    return embedding_index
+
+
+def create_embedding_matrix(embeddings_index, word_index, model_config):
+    embedding_matrix = np.zeros((model_config.max_num_words, model_config.embed_dim))
+    for word, i in word_index.items():
+        if i >= model_config.max_num_words:
+            continue
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
+    return embedding_matrix
+
+
+def sentence_to_vec(sentence, word_index, model_config):
     x = [word_index.get(w, 1) for w in sentence]
     x = pad_sequences([x], maxlen=model_config.max_sequence_len)
     return x
