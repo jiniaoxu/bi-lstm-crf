@@ -1,11 +1,11 @@
-import os
+from bi_lstm_crf_model import *
 
+import os
 import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
 import numpy as np
-from bi_lstm_crf_model import *
 
 CHUNK_TAGS = ['B', 'I', 'S']
 

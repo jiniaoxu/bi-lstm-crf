@@ -7,7 +7,7 @@ def convert_to_bis(source_dir, target_path, append=True):
     for root, dirs, files in os.walk(source_dir):
         for name in files:
             file = os.path.join(root, name)
-            bises = _process_file(file)
+            bises = process_file(file)
             if append:
                 _save_bises(bises, target_path, write_mode='a')
             else:
@@ -22,7 +22,7 @@ def _save_bises(bises, path, write_mode='w'):
             f.write('\n')
 
 
-def _process_file(file):
+def process_file(file):
     with open(file, 'r', encoding='UTF-8') as f:
         text = f.readlines()
         bises = _parse_text(text)

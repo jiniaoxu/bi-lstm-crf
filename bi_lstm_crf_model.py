@@ -1,10 +1,9 @@
-import pickle
-
+from process_data import *
 from keras.layers import Input, Embedding, LSTM, Dense, Bidirectional, Dropout, TimeDistributed
 from keras.models import Model
 from keras_contrib.layers import CRF
 
-from process_data import *
+import pickle
 
 """
 使用keras实现的中文分词，原理基于论文：https://arxiv.org/abs/1508.01991
@@ -65,14 +64,11 @@ def save_model(model_config: BiLSTMCRFModelConfigure
     model.save(model_path)
 
 
-def load_model(weights_path, model_config_path, dict_path, embedding_file_path=None):
+def load_model(weights_path, model_config_path, dict_path):
     with open(model_config_path, 'rb') as f:
-        model_builder: BiLSTMCRFModelConfigure = pickle.load(f)
+        model_builder = pickle.load(f)
     with open(dict_path, 'rb') as f:
         vocab, chunk = pickle.load(f)
-    embedding_matrix = None
-    if embedding_file_path is not None:
-        embedding_matrix = create_embedding_matrix(get_embedding_index(embedding_file_path), vocab, model_builder)
-    model = model_builder.build_model(embedding_matrix)
+    model = model_builder.build_model()
     model.load_weights(weights_path)
     return model, model_builder, vocab, chunk
