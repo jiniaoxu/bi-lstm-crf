@@ -24,7 +24,7 @@ class BiLSTMCRFModelConfigure:
         self.embed_dim = embed_dim
         self.bi_lstm_units = bi_lstm_units
         self.max_sequence_len = max_sequence_len
-        self.max_num_words = max_num_words
+        self.max_num_words = min(max_num_words, vocab_size)
         self.chunk_size = chunk_size
 
     def build_model(self, embeddings_matrix=None):
