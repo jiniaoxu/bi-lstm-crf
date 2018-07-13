@@ -38,7 +38,7 @@ if __name__ == '__main__':
     ck = ModelCheckpoint(os.path.join(save_dir, 'weights.{epoch:02d}-{val_loss:.2f}.h5')
                          , monitor='loss', verbose=0)
 
-    model.fit(x_train, y_train, batch_size=128, epochs=3,
+    model.fit(x_train, y_train, batch_size=128, epochs=10,
               validation_data=(x_val, y_val), callbacks=[ck])
 
     save_model(model_configure
