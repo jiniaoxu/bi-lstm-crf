@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     args = parse.parse_args()
     corups_dir = args.corups_dir
-    gold_file_path = args.corups_file_path
+    gold_file_path = args.gold_file_path
     restore_file_path = args.restore_file_path
 
     print("Processing...")
