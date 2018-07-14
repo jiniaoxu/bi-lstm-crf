@@ -1,23 +1,29 @@
-from bi_lstm_crf_model import *
-
 import os
+
+import numpy as np
 import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
-import numpy as np
+
+from bi_lstm_crf_model import *
 
 CHUNK_TAGS = ['B', 'I', 'S']
 
 
-def _parse_data(fh):
+def _parse_data(fh, splits):
     text = fh.readlines()
     sent, t1, t2, chunk = [], [], [], []
     for i in text:
         if i != '\n':
-            t1.append(i.split()[0].lower())
-            t2.append(i.split()[1])
-        else:
+            char, tag = i.split()
+            t1.append(char)
+            t2.append(tag)
+            if char in splits:
+                sent.append(t1)
+                chunk.append(t2)
+                t1, t2 = [], []
+        elif len(t1) != 0:
             sent.append(t1)
             chunk.append(t2)
             t1, t2 = [], []
@@ -27,8 +33,10 @@ def _parse_data(fh):
     return sent, chunk
 
 
-def process_data(corops_path, max_num_words=20000, max_sequence_len=100):
-    sent, chunk = _parse_data(open(corops_path, 'r', encoding='UTF-8'))
+def process_data(corops_path, max_num_words=20000, max_sequence_len=150, splits=None):
+    if splits is None:
+        splits = ['。']
+    sent, chunk = _parse_data(open(corops_path, 'r', encoding='UTF-8'), splits)
     tokenizer = Tokenizer(num_words=max_num_words)
     tokenizer.fit_on_texts(sent)
     sequences = tokenizer.texts_to_sequences(sent)
@@ -73,7 +81,7 @@ def create_embedding_matrix(embeddings_index, word_index, model_config):
     return embedding_matrix
 
 
-def sentence_to_vec(sentence, word_index, model_config):
-    x = [word_index.get(w, 1) for w in sentence]
-    x = pad_sequences([x], maxlen=model_config.max_sequence_len)
+def sentence_to_vec(sentences: iter, word_index, model_config):
+    x = list(map(lambda sentence: [word_index.get(w, 1) for w in sentence], sentences))
+    x = pad_sequences(x, maxlen=model_config.max_sequence_len)
     return x
