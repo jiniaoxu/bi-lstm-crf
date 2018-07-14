@@ -11,13 +11,13 @@ if __name__ == '__main__':
     parse.add_argument("--data_path", help="训练数据文件路径", default="./data/train.data")
     parse.add_argument("--val_split", type=float, help="验证集所占比例", default=0.2)
     parse.add_argument("--save_dir", help="模型保存目录", default="./model")
-    parse.add_argument("--embedding_file_path", help="词嵌入文件路径，若不指定，则会随机初始化词向量", default="")
+    parse.add_argument("--embedding_file_path", help="词嵌入文件路径，若不指定，则会随机初始化词向量", default=None)
 
     args = parse.parse_args()
     data_path = args.data_path
     val_split = args.val_split
     save_dir = args.save_dir
-    embedding_file_path = None if args.embedding_file_path == "" else args.embedding_file_path
+    embedding_file_path = args.embedding_file_path
 
     x, y, word_index, chunk_index = process_data(data_path)
 

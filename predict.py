@@ -64,12 +64,12 @@ if __name__ == '__main__':
     optimal_thread_count = multiprocessing.cpu_count()
     pool_scheduler = ThreadPoolScheduler(optimal_thread_count)
 
-    parser = argparse.ArgumentParser(description="分割一段或几段文本")
+    parser = argparse.ArgumentParser(description="分割一段或几段文本，每段文本不超过150词，否则会截断。")
     parser.add_argument("-m", "--model_dir", help="指定模型目录", default="./model")
     parser.add_argument("-pf", "--pref_file_path", help="将分词结果保存到指定文件中", default=None)
 
     parser.add_mutually_exclusive_group()
-    parser.add_argument("-s", "--sentence", help="要分割的语句")
+    parser.add_argument("-s", "--sentence", help="指定要分词的语句，以句号（。）分割多句")
     parser.add_argument("-tf", "--text_file_path", help="要分割的文本文件的路径，文本中每一行为一句话。")
 
     args = parser.parse_args()
