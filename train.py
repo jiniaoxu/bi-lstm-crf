@@ -11,7 +11,7 @@ if __name__ == '__main__':
     parse.add_argument("--data_path", help="训练数据文件路径", default="./data/train.data")
     parse.add_argument("--val_split", type=float, help="验证集所占比例", default=0.2)
     parse.add_argument("--save_dir", help="模型保存目录", default="./model")
-    parse.add_argument("--embedding_file_path", help="词嵌入文件路径，若不指定，则会训练词向量", default="")
+    parse.add_argument("--embedding_file_path", help="词嵌入文件路径，若不指定，则会随机初始化词向量", default="")
 
     args = parse.parse_args()
     data_path = args.data_path
@@ -20,6 +20,9 @@ if __name__ == '__main__':
     embedding_file_path = None if args.embedding_file_path == "" else args.embedding_file_path
 
     x, y, word_index, chunk_index = process_data(data_path)
+
+    # 保存词汇表
+    save_dict((word_index, chunk_index), os.path.join(save_dir, 'model.dict'))
 
     indices = np.arange(x.shape[0])
     np.random.shuffle(indices)
@@ -35,6 +38,9 @@ if __name__ == '__main__':
 
     model_configure = BiLSTMCRFModelConfigure(len(word_index) + 1, len(chunk_index) + 1)
 
+    # 保存模型配置
+    save_model_config(model_configure, os.path.join(save_dir, 'model.cfg'))
+
     # 载入词向量
     embedding_matrix = None
     if embedding_file_path is not None:
@@ -47,12 +53,8 @@ if __name__ == '__main__':
     ck = ModelCheckpoint(os.path.join(save_dir, 'weights.{epoch:02d}-{val_loss:.2f}.h5')
                          , monitor='loss', verbose=0)
 
-    model.fit(x_train, y_train, batch_size=64, epochs=10,
+    model.fit(x_train, y_train, batch_size=128, epochs=10,
               validation_data=(x_val, y_val), callbacks=[ck])
 
-    save_model(model_configure
-               , os.path.join(save_dir, 'model.cfg')
-               , model
-               , os.path.join(save_dir, 'model.final.h5')
-               , (word_index, chunk_index)
-               , os.path.join(save_dir, 'model.dict'))
+    # 保存最终的权重
+    model.save(os.path.join(save_dir, 'model.final.h5'))
