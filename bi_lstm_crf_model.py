@@ -3,6 +3,7 @@ from keras.layers import Input, Embedding, LSTM, Dense, Bidirectional, Dropout, 
 from keras.models import Model
 from keras_contrib.layers import CRF
 
+import keras
 import pickle
 
 """
@@ -17,7 +18,7 @@ class BiLSTMCRFModelConfigure:
                  , chunk_size: int
                  , embed_dim=300
                  , bi_lstm_units=200
-                 , max_sequence_len=100
+                 , max_sequence_len=150
                  , max_num_words=20000):
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
@@ -47,28 +48,28 @@ class BiLSTMCRFModelConfigure:
 
         model = Model([word_input], [crf_output])
 
-        model.compile(optimizer='adam', loss=crf.loss_function, metrics=[crf.accuracy])
+        model.compile(optimizer=keras.optimizers.Adam(), loss=crf.loss_function, metrics=[crf.accuracy])
         return model
 
 
-def save_model(model_config: BiLSTMCRFModelConfigure
-               , model_config_path
-               , model: Model
-               , model_path
-               , dict: tuple
-               , dict_path):
-    with open(model_config_path, "wb") as f:
-        pickle.dump(model_config, f)
+def save_dict(dict: tuple, dict_path):
     with open(dict_path, "wb") as f:
         pickle.dump(dict, f)
-    model.save(model_path)
 
 
-def load_model(weights_path, model_config_path, dict_path):
+def save_model_config(model_config: BiLSTMCRFModelConfigure
+                      , model_config_path):
+    with open(model_config_path, "wb") as f:
+        pickle.dump(model_config, f)
+
+
+def load_model_config(model_config_path) -> BiLSTMCRFModelConfigure:
     with open(model_config_path, 'rb') as f:
         model_builder = pickle.load(f)
+    return model_builder
+
+
+def load_dict(dict_path):
     with open(dict_path, 'rb') as f:
         vocab, chunk = pickle.load(f)
-    model = model_builder.build_model()
-    model.load_weights(weights_path)
-    return model, model_builder, vocab, chunk
+    return vocab, chunk
