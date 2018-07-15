@@ -1,6 +1,6 @@
 # coding:utf_8
 import sys
-import codecs
+import re
 
 # """
 #   通过与黄金标准文件对比分析中文分词效果.
@@ -59,17 +59,14 @@ def read_line(f):
         读取一行，并清洗空格和换行
     '''
     line = f.readline()
-    line = line.strip('\n').strip('\r').strip(' ')
-    while (line.find('  ') >= 0):
-        line = line.replace('  ', ' ')
-    return line
+    return line.strip()
 
 
-def prf_score(real_text_file, pred_text_file, prf_file, seed, best_epoch):
-    file_gold = codecs.open(real_text_file, 'r', 'utf8')
+def prf_score(real_text_file, pred_text_file, prf_file, epoch):
+    file_gold = open(real_text_file, 'r', encoding='utf8')
     # file_gold = codecs.open(r'../corpus/msr_test_gold.utf8', 'r', 'utf8')
     # file_tag = codecs.open(r'pred_standard.txt', 'r', 'utf8')
-    file_tag = codecs.open(pred_text_file, 'r', 'utf8')
+    file_tag = open(pred_text_file, 'r', encoding='utf8')
 
     line1 = read_line(file_gold)
     N_count = 0  # 将正类分为正或者将正类分为负
@@ -119,15 +116,10 @@ def prf_score(real_text_file, pred_text_file, prf_file, seed, best_epoch):
     F = 2. * P * R / (P + R)
     ER = 1. * e_count / N_count
 
-    # print '  标准词数：{} 个，正确词数：{} 个，错误词数：{} 个'.format(N_count, c_count, e_count).decode('utf8')
-    # print '  标准行数：{}，正确行数：{} ，错误行数：{}'.format(c_line_count+e_line_count, c_line_count, e_line_count).decode('utf8')
-    # print '  Recall: {}%'.format(R)
-    # print '  Precision: {}%'.format(P)
-    # print '  F MEASURE: {}%'.format(F)
-    # print '  ERR RATE: {}%'.format(ER)
     print("result:")
-    print('标准词数：%d个，正确词数：%d个，错误词数：%d个' % (N_count, c_count, e_count))
-    print('标准行数：%d，正确行数：%d，错误行数：%d' % (c_line_count + e_line_count, c_line_count, e_line_count))
+    print('标准词数：%d个，词数正确率：%f个，词数错误率：%f \n' % (N_count, c_count / N_count, e_count / N_count))
+    print('标准行数：%d，行数正确率：%f，行数错误率：%f \n' % (c_line_count + e_line_count, c_line_count / (c_line_count + e_line_count),
+                                         e_line_count / (c_line_count + e_line_count)))
     print('Recall: %f' % (R))
     print('Precision: %f' % (P))
     print('F MEASURE: %f' % (F))
@@ -135,10 +127,11 @@ def prf_score(real_text_file, pred_text_file, prf_file, seed, best_epoch):
 
     # print P,R,F
 
-    f = codecs.open(prf_file, 'a', 'utf-8')
-    f.write('result-(seed:%s , best_epoch:%s):\n' % (seed, best_epoch))
-    f.write('标准词数：%d个，正确词数：%d个，错误词数：%d个\n' % (N_count, c_count, e_count))
-    f.write('标准行数：%d，正确行数：%d，错误行数：%d\n' % (c_line_count + e_line_count, c_line_count, e_line_count))
+    f = open(prf_file, 'a', encoding='utf-8')
+    f.write('result-(epoch:%s):\n' % epoch)
+    f.write('标准词数：%d，词数正确率：%f，词数错误率：%f \n' % (N_count, c_count / N_count, e_count / N_count))
+    f.write('标准行数：%d，行数正确率：%f，行数错误率：%f \n' % (c_line_count + e_line_count, c_line_count / (c_line_count + e_line_count),
+                                         e_line_count / (c_line_count + e_line_count)))
     f.write('Recall: %f\n' % (R))
     f.write('Precision: %f\n' % (P))
     f.write('F MEASURE: %f\n' % (F))
@@ -149,8 +142,7 @@ def prf_score(real_text_file, pred_text_file, prf_file, seed, best_epoch):
 
 
 def main():
-    # prf_score('real_text.txt','corpus/test_p0.19999999999999996_11110.utf8','prf_tmp.txt',1111)
-    F = prf_score('real_text.txt', 'pred_text.txt', 'prf_tmp.txt', 1111, 10)
+    F = prf_score('./score/gold.utf8', './score/pred_text.utf8', 'prf_tmp.txt', 15)
 
 
 if __name__ == '__main__':

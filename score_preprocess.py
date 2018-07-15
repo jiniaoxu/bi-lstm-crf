@@ -42,11 +42,13 @@ def _convert_to_lines(bises):
 def save_to(lines, file_path, with_white=True):
     with open(file_path, 'a', encoding='UTF-8') as f:
         for line in lines:
-            line_str = list(map(lambda words: ''.join(words), line))
-            if with_white:
-                f.write(' '.join(line_str) + '\n')
-            else:
-                f.write(''.join(line_str) + '\n')
+            line_str_splits = list(map(lambda words: ''.join(words), line))
+            line_str = ''.join(line_str_splits) + '\n'
+            if 150 >= len(line_str) > 1:
+                if with_white:
+                    f.write(' '.join(line_str_splits) + '\n')
+                else:
+                    f.write(line_str)
 
 
 if __name__ == '__main__':
