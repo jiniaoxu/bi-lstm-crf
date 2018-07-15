@@ -9,19 +9,26 @@ from bi_lstm_crf_model import *
 from process_data import *
 
 
-def predict(sentences, word_index, index_chunk, model: Model, model_config: BiLSTMCRFModelConfigure) -> Observable:
+def predict(sentences, word_index, index_chunk, model: Model, model_config: BiLSTMCRFModelConfigure,
+            parallel=True) -> Observable:
     x = sentence_to_vec(sentences, word_index, model_config)
 
     preds = model.predict(x)
     tags_encode = np.argmax(preds, axis=2)
     tags_decode = Observable.of(*tags_encode)
 
-    return Observable.zip(Observable.of(*sentences), tags_decode, lambda s, i: (s, i)) \
-        .flat_map(lambda v: Observable.just(v)
-                  .subscribe_on(pool_scheduler)
-                  .map(lambda v: (v[0], v[1][-len(v[0]):]))
-                  .map(lambda v: (v[0], list(map(lambda i: index_chunk[i], v[1]))))
-                  .map(lambda v: cut_sentence_str(*v)))
+    if parallel:
+        return Observable.zip(Observable.of(*sentences), tags_decode, lambda s, i: (s, i)) \
+            .flat_map(lambda v: Observable.just(v)
+                      .subscribe_on(pool_scheduler)
+                      .map(lambda v: (v[0], v[1][-len(v[0]):]))
+                      .map(lambda v: (v[0], list(map(lambda i: index_chunk[i], v[1]))))
+                      .map(lambda v: cut_sentence_str(*v)))
+    else:
+        return Observable.zip(Observable.of(*sentences), tags_decode, lambda s, i: (s, i)) \
+            .map(lambda v: (v[0], v[1][-len(v[0]):])) \
+            .map(lambda v: (v[0], list(map(lambda i: index_chunk[i], v[1])))) \
+            .map(lambda v: cut_sentence_str(*v))
 
 
 def cut_sentence(sentence, tags):
@@ -56,8 +63,9 @@ def _load_sentences(text_file, max_sentence_len):
 
 
 def _save_pred(pred, pred_file_path):
+    stream = pred.reduce(lambda a, b: a + b)
     with open(pred_file_path, "a", encoding="UTF-8") as f:
-        pred.subscribe(lambda line: f.write(line))
+        stream.subscribe(lambda text: f.write(' '.join(text)))
 
 
 if __name__ == '__main__':
@@ -97,7 +105,8 @@ if __name__ == '__main__':
     start = time.clock()
     result = predict(sentences, word_index, index_chunk, model, config)
     print("Cost time {} s".format(time.clock() - start))
-    result.subscribe(lambda v: print(v))
 
     if args.pref_file_path:
         _save_pred(result, args.pref_file_path)
+    else:
+        result.subscribe(lambda v: print(v))
