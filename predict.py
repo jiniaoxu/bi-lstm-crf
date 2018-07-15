@@ -91,7 +91,7 @@ if __name__ == '__main__':
     index_chunk = {i: c for c, i in chunk_index.items()}
 
     if args.sentence:
-        sentences = '。'.split(args.sentence)
+        sentences = '|'.split(args.sentence)
     elif args.text_file_path:
         sentences = _load_sentences(args.text_file_path, config.max_sequence_len)
     else:
