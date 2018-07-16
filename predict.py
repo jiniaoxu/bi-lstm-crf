@@ -10,7 +10,7 @@ from process_data import *
 
 
 def predict(sentences, word_index, index_chunk, model: Model, model_config: BiLSTMCRFModelConfigure,
-            parallel=True) -> Observable:
+            parallel=False) -> Observable:
     x = sentence_to_vec(sentences, word_index, model_config)
 
     start = time.clock()
