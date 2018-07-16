@@ -13,7 +13,9 @@ def predict(sentences, word_index, index_chunk, model: Model, model_config: BiLS
             parallel=True) -> Observable:
     x = sentence_to_vec(sentences, word_index, model_config)
 
-    preds = model.predict(x)
+    start = time.clock()
+    preds = model.predict(x, batch_size=1024)
+    print("Predict cost time {} s".format(time.clock() - start))
     tags_encode = np.argmax(preds, axis=2)
     tags_decode = Observable.of(*tags_encode)
 
@@ -102,9 +104,7 @@ if __name__ == '__main__':
     #     "拿大家经常使用的school data做个简单的对比，school data是用来预测学生成绩的回归问题的数据集，总共有139个中学的15362个学生，其中每一个中学都可以看作是一个预测任务。",
     #     "单任务学习就是忽略任务之间可能存在的关系分别学习139个回归函数进行分数的预测，或者直接将139个学校的所有数据放到一起学习一个回归函数进行预测。"]
 
-    start = time.clock()
     result = predict(sentences, word_index, index_chunk, model, config)
-    print("Cost time {} s".format(time.clock() - start))
 
     if args.pref_file_path:
         _save_pred(result, args.pref_file_path)
