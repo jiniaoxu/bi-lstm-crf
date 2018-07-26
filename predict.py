@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument("-pf", "--pref_file_path", help="将分词结果保存到指定文件中", default=None)
 
     parser.add_mutually_exclusive_group()
-    parser.add_argument("-s", "--sentence", help="指定要分词的语句，以句号（。）分割多句")
+    parser.add_argument("-s", "--sentence", help="指定要分词的语句，以空格' '分割多句")
     parser.add_argument("-tf", "--text_file_path", help="要分割的文本文件的路径，文本中每一行为一句话。")
 
     args = parser.parse_args()
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     index_chunk = {i: c for c, i in chunk_index.items()}
 
     if args.sentence:
-        sentences = '|'.split(args.sentence)
+        sentences = args.sentence.split()
     elif args.text_file_path:
         sentences = _load_sentences(args.text_file_path, config.max_sequence_len)
     else:
