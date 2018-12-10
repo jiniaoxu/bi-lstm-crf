@@ -1,9 +1,15 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
+
+import numpy as np
 
 from keras import Input, Model
 from keras.layers import Embedding, Bidirectional, Dropout, Dense, LSTM, Lambda
 from keras.optimizers import Adam
+from keras.preprocessing.sequence import pad_sequences
 from keras_contrib.layers import CRF
+from keras_preprocessing.text import Tokenizer
+
 from dltokenizer.tools import load_dictionary
 
 
@@ -20,8 +26,8 @@ class DLTokenizer:
                  optimizer=Adam(),
                  emb_matrix=None,
                  weights_path=None,
-                 src_tokenizer=None,
-                 tgt_tokenizer=None):
+                 src_tokenizer: Tokenizer = None,
+                 tgt_tokenizer: Tokenizer = None):
         self.vocab_size = vocab_size
         self.chunk_size = chunk_size
         self.embed_dim = embed_dim
@@ -60,6 +66,63 @@ class DLTokenizer:
 
         model.compile(optimizer=self.optimizer, loss=crf.loss_function, metrics=[crf.accuracy])
         return model
+
+    def decode_sequences(self, sequences):
+        sequences = self._seq_to_matrix(sequences)
+        output = self.model.predict_on_batch(sequences)  # [N, -1, chunk_size + 1]
+        output = np.argmax(output, axis=2)
+        return self.tgt_tokenizer.sequences_to_texts(output)
+
+    def _single_decode(self, args):
+        sent, tag = args
+        cur_sent, cur_tag = [], []
+        tag = tag.split(' ')
+
+        t1, pre_pos = [], None
+        for i in range(len(sent)):
+            c, pos = tag[i].split('-')
+            word = sent[i]
+            if c == 's':
+                if len(t1) != 0:
+                    cur_sent.append(''.join(t1))
+                    cur_tag.append(pre_pos)
+                    t1 = []
+                    pre_pos = None
+                cur_sent.append(word)
+                cur_tag.append(pos)
+            if c == 'i':
+                t1.append(word)
+                pre_pos = pos
+            if c == 'b':
+                if len(t1) == 0:
+                    t1 = [word]
+                    pre_pos = pos
+                else:
+                    cur_sent.append(''.join(t1))
+                    cur_tag.append(pre_pos)
+                    t1 = []
+                    pre_pos = None
+        return cur_sent, cur_tag
+
+    def decode_texts(self, texts):
+        sents = []
+        with ThreadPoolExecutor() as executor:
+            for text in executor.map(lambda x: list(x), texts):
+                sents.append(text)
+
+        sequences = self.src_tokenizer.texts_to_sequences(sents)
+        tags = self.decode_sequences(sequences)
+
+        ret = []
+        with ThreadPoolExecutor() as executor:
+            for cur_sent, cur_tag in executor.map(self._single_decode, zip(sents, tags)):
+                ret.append((cur_sent, cur_tag))
+
+        return ret
+
+    def _seq_to_matrix(self, sequences):
+        max_len = len(max(sequences, key=len))
+        return pad_sequences(sequences, maxlen=max_len, padding="post")
 
     def get_config(self):
         return {
