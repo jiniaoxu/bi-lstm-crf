@@ -1,5 +1,5 @@
 .idea/
 data/
-model/
+models/
 tests/
 *.egg-info/
