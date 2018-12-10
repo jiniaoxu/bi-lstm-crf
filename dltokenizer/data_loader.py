@@ -1,5 +1,10 @@
 import os
 
+from keras.preprocessing.sequence import pad_sequences
+from keras.utils import to_categorical
+
+from dltokenizer.tools import load_dictionary
+
 
 class DataLoader:
 
@@ -8,14 +13,17 @@ class DataLoader:
                  tgt_dict_path,
                  batch_size=64,
                  max_len=999,
-                 total_size=441959,
+                 word_delimiter=' ',
+                 sent_delimiter='\t',
                  encoding="utf-8"):
-        # self.src_tokenizer = load_dictionary(src_dict_path, encoding)
-        # self.tgt_tokenizer = load_dictionary(tgt_dict_path, encoding)
+        self.src_tokenizer = load_dictionary(src_dict_path, encoding)
+        self.tgt_tokenizer = load_dictionary(tgt_dict_path, encoding)
         self.batch_size = batch_size
         self.max_len = max_len
-        self.steps_per_epoch = total_size // self.batch_size
-        self.total_size = total_size
+        self.word_delimiter = word_delimiter
+        self.sent_delimiter = sent_delimiter
+        self.src_vocab_size = self.src_tokenizer.num_words
+        self.tgt_vocab_size = self.tgt_tokenizer.num_words
 
     def generator(self, file_path, encoding="utf-8"):
         if os.path.isdir(file_path):
@@ -35,30 +43,22 @@ class DataLoader:
 
     def load_sents_from_file(self, file_path, encoding):
         with open(file_path, encoding=encoding) as f:
-            sent, t1, t2, chunk = [], [], [], []
+            sent, chunk = [], []
             for line in f:
-                if line != '\n':
-                    char, tag = line.split()
-                    t1.append(char)
-                    t2.append(tag)
-                elif len(t1) != 0:
-                    sent.append(t1)
-                    chunk.append(t2)
-                    t1, t2 = [], []
+                line = line[:-1]
+                chars, tags = line.split(self.sent_delimiter)
+                sent.append(chars.split(self.word_delimiter))
+                chunk.append(tags.split(self.word_delimiter))
                 if len(sent) >= self.batch_size:
-                    # sent = pd.Series(sent)
-                    # chunk = pd.Series(chunk)
+                    sent = self.src_tokenizer.texts_to_sequences(sent)
+                    chunk = self.tgt_tokenizer.texts_to_sequences(chunk)
+                    sent, chunk = self._pad_seq(sent, chunk)
+                    chunk = to_categorical(chunk, num_classes=self.tgt_vocab_size + 1)
                     yield sent, chunk
                     sent, chunk = [], []
 
-
-if __name__ == '__main__':
-    data_loader = DataLoader(None, None, batch_size=128)
-
-    generator = data_loader.generator("../data/2014")
-    for _ in range(3):
-        sent, chunk = next(generator)
-        print(len(sent))
-        assert len(sent) == len(chunk)
-        print(sent)
-        print(chunk)
+    def _pad_seq(self, sent, chunk):
+        len_sent = min(len(max(sent, key=len)), self.max_len)
+        sent = pad_sequences(sent, maxlen=len_sent, padding='post')
+        chunk = pad_sequences(chunk, maxlen=len_sent, padding='post')
+        return sent, chunk
