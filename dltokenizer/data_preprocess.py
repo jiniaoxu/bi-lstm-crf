@@ -115,7 +115,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="将使用词性标注的文件转换为用BIS分块标记的文件。")
     parser.add_argument("corups_dir", type=str, help="指定存放语料库的文件夹，程序将会递归查找目录下的文件。")
     parser.add_argument("output_path", type=str, default='.', help="指定标记好的文件的输出路径。")
-    parser.add_argument("-c", "--combine", help="是否组装为一个文件", action="store_false")
+    parser.add_argument("-c", "--combine", help="是否组装为一个文件", default=False, type=bool)
+    parser.add_argument("--log", help="是否打印进度条", default=False, type=bool)
     args = parser.parse_args()
 
-    convert_to_bis(args.corups_dir, args.output_path, False)
+    convert_to_bis(args.corups_dir, args.output_path, args.log, args.combine)
