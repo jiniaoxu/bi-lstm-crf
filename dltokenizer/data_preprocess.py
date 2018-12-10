@@ -3,43 +3,22 @@ import re
 import argparse
 
 
-def print_process(process):
-    num_processed = int(30 * process)
-    num_unprocessed = 30 - num_processed
-    print(
-        f"{''.join(['['] + ['='] * num_processed + ['>'] + [' '] * num_unprocessed + [']'])}, {(process * 100):.2f} %")
-
-
-def convert_to_bis(source_dir, target_path, log=False, combine=False):
-    print("Converting...")
+def convert_to_bis(source_dir, target_path, append=True):
     for root, dirs, files in os.walk(source_dir):
-        total = len(files)
-        tgt_dir = target_path + root[len(source_dir):]
-
-        print(tgt_dir)
-        for index, name in enumerate(files):
+        for name in files:
             file = os.path.join(root, name)
             bises = process_file(file)
-            if combine:
+            if append:
                 _save_bises(bises, target_path, write_mode='a')
             else:
-                os.makedirs(tgt_dir, exist_ok=True)
-                _save_bises(bises, os.path.join(tgt_dir, name))
-            if log:
-                print_process((index + 1) / total)
-    print("All converted")
+                _save_bises(bises, target_path)
 
 
-def _save_bises(bises, path, write_mode='w+'):
-    with open(path, mode=write_mode, encoding='UTF-8') as f:
+def _save_bises(bises, path, write_mode='a'):
+    with open(path, write_mode, encoding='UTF-8') as f:
         for bis in bises:
-            sent, tags = [], []
             for char, tag in bis:
-                sent.append(char)
-                tags.append(tag)
-            sent = ' '.join(sent)
-            tags = ' '.join(tags)
-            f.write(sent + "\t" + tags)
+                f.write(char + ' ' + tag + '\n')
             f.write('\n')
 
 
@@ -53,7 +32,7 @@ def process_file(file):
 def _parse_text(text: list):
     bises = []
     for line in text:
-        # remove POS tag
+        # remove '\n'
         line, _ = re.subn('\\n', '', line)
         if line == '' or line == '\n':
             continue
@@ -115,7 +94,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="将使用词性标注的文件转换为用BIS分块标记的文件。")
     parser.add_argument("corups_dir", type=str, help="指定存放语料库的文件夹，程序将会递归查找目录下的文件。")
     parser.add_argument("output_path", type=str, default='.', help="指定标记好的文件的输出路径。")
-    parser.add_argument("-c", "--combine", help="是否组装为一个文件", action="store_false")
+    parser.add_argument("-a", "--append", help="写入文件的模式为追加", action="store_true")
     args = parser.parse_args()
 
-    convert_to_bis(args.corups_dir, args.output_path, False)
+    print("Converting...")
+    convert_to_bis(args.corups_dir, args.output_path, args.append)
+    print("Converted.")
