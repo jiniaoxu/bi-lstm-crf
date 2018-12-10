@@ -90,10 +90,10 @@ class DLTokenizer:
                     pre_pos = None
                 cur_sent.append(word)
                 cur_tag.append(pos)
-            if c == 'i':
+            elif c == 'i':
                 t1.append(word)
                 pre_pos = pos
-            if c == 'b':
+            elif c == 'b':
                 if len(t1) == 0:
                     t1 = [word]
                     pre_pos = pos
