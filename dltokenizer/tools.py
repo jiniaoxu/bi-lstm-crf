@@ -84,10 +84,10 @@ def get_embedding_index(embedding_file):
     return embedding_index
 
 
-def create_embedding_matrix(embeddings_index, word_index, model_config):
-    embedding_matrix = np.zeros((model_config.max_num_words, model_config.embed_dim))
+def create_embedding_matrix(embeddings_index, word_index, vocab_size, embed_dim):
+    embedding_matrix = np.zeros((vocab_size, embed_dim))
     for word, i in word_index.items():
-        if i >= model_config.max_num_words:
+        if i >= vocab_size:
             continue
         embedding_vector = embeddings_index.get(word)
         if embedding_vector is not None:

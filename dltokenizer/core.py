@@ -11,7 +11,7 @@ from keras.preprocessing.sequence import pad_sequences
 from keras_contrib.layers import CRF
 from keras_preprocessing.text import Tokenizer
 
-from dltokenizer.tools import load_dictionary
+from dltokenizer.tools import load_dictionary, create_embedding_matrix, get_embedding_index
 
 
 class DLTokenizer:
@@ -46,7 +46,7 @@ class DLTokenizer:
                 print("Not weights found, create a new model.")
 
     def __build_model(self, emb_matrix=None):
-        num_words = min(self.max_num_words, self.vocab_size)
+        num_words = min(self.max_num_words, self.vocab_size + 1)
         word_input = Input(shape=(None,), dtype='int32', name="word_input")
 
         if emb_matrix is not None:
@@ -54,6 +54,7 @@ class DLTokenizer:
                                        weights=[emb_matrix],
                                        trainable=False,
                                        name='word_emb')(word_input)
+            print("Found emb matrix, applied.")
         else:
             word_embedding = Embedding(num_words, self.embed_dim, name="word_emb") \
                 (word_input)
@@ -136,6 +137,7 @@ class DLTokenizer:
     def get_or_create(config, src_dict_path=None,
                       tgt_dict_path=None,
                       weights_path=None,
+                      embedding_file=None,
                       optimizer=Adam(),
                       encoding="utf-8"):
         if DLTokenizer.__singleton is None:
@@ -148,7 +150,13 @@ class DLTokenizer:
                 raise ValueError("Unexpect config type!")
 
             if src_dict_path is not None:
-                config['src_tokenizer'] = load_dictionary(src_dict_path, encoding)
+                src_tokenizer = load_dictionary(src_dict_path, encoding)
+                config['src_tokenizer'] = src_tokenizer
+                if embedding_file is not None:
+                    emb_matrix = create_embedding_matrix(get_embedding_index(embedding_file), src_tokenizer.word_index,
+                                                         min(config['vocab_size'] + 1, config['max_num_words']),
+                                                         config['embed_dim'])
+                    config['emb_matrix'] = emb_matrix
             if tgt_dict_path is not None:
                 config['tgt_tokenizer'] = load_dictionary(tgt_dict_path, encoding)
 
