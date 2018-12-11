@@ -1,4 +1,5 @@
 import json
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
@@ -77,11 +78,11 @@ class DLTokenizer:
         sent, tag = args
         cur_sent, cur_tag = [], []
         tag = tag.split(' ')
-
         t1, pre_pos = [], None
         for i in range(len(sent)):
             c, pos = tag[i].split('-')
             word = sent[i]
+            # print(word, c, pos)
             if c == 's':
                 if len(t1) != 0:
                     cur_sent.append(''.join(t1))
@@ -94,22 +95,19 @@ class DLTokenizer:
                 t1.append(word)
                 pre_pos = pos
             elif c == 'b':
-                if len(t1) == 0:
-                    t1 = [word]
-                    pre_pos = pos
-                else:
+                if len(t1) != 0:
                     cur_sent.append(''.join(t1))
                     cur_tag.append(pre_pos)
-                    t1 = []
-                    pre_pos = None
+                t1 = [word]
+                pre_pos = pos
+
         return cur_sent, cur_tag
 
     def decode_texts(self, texts):
         sents = []
         with ThreadPoolExecutor() as executor:
-            for text in executor.map(lambda x: list(x), texts):
+            for text in executor.map(lambda x: list(re.subn("\s+", "-", x)[0]), texts):
                 sents.append(text)
-
         sequences = self.src_tokenizer.texts_to_sequences(sents)
         tags = self.decode_sequences(sequences)
 
