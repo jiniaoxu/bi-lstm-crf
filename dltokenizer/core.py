@@ -3,9 +3,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
-
 from keras import Input, Model
-from keras.layers import Embedding, Bidirectional, Dropout, Dense, LSTM, Lambda
+from keras.layers import Embedding, Bidirectional, Dropout, Dense, LSTM
 from keras.optimizers import Adam
 from keras.preprocessing.sequence import pad_sequences
 from keras_contrib.layers import CRF
@@ -52,15 +51,16 @@ class DLTokenizer:
         if emb_matrix is not None:
             word_embedding = Embedding(num_words, self.embed_dim,
                                        weights=[emb_matrix],
-                                       trainable=False,
+                                       trainable=True,
                                        name='word_emb')(word_input)
             print("Found emb matrix, applied.")
         else:
             word_embedding = Embedding(num_words, self.embed_dim, name="word_emb") \
                 (word_input)
-        bilstm = Bidirectional(LSTM(self.bi_lstm_units // 2, return_sequences=True))(word_embedding)
+        bilstm = Bidirectional(LSTM(self.bi_lstm_units // 2, return_sequences=True, bias_initializer="ones"))(
+            word_embedding)
         x = Dropout(self.dropout_rate)(bilstm)
-        dense = Dense(self.chunk_size + 1)(x)
+        dense = Dense(self.chunk_size + 1, kernel_initializer="he_normal")(x)
         crf = CRF(self.chunk_size + 1, sparse_target=False)
         crf_output = crf(dense)
 
@@ -83,7 +83,6 @@ class DLTokenizer:
         for i in range(len(sent)):
             c, pos = tag[i].split('-')
             word = sent[i]
-            # print(word, c, pos)
             if c == 's':
                 if len(t1) != 0:
                     cur_sent.append(''.join(t1))
