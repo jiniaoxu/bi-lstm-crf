@@ -81,16 +81,20 @@ class DLTokenizer:
         tag = tag.split(' ')
         t1, pre_pos = [], None
         for i in range(len(sent)):
-            c, pos = tag[i].split('-')
+            tokens = tag[i].split('-')
+            if len(tokens) == 2:
+                c, pos = tokens
+            else:
+                c = 'i'
+                pos = "<UNK>"
+
             word = sent[i]
             if c == 's':
                 if len(t1) != 0:
                     cur_sent.append(''.join(t1))
                     cur_tag.append(pre_pos)
-                    t1 = []
-                    pre_pos = None
-                cur_sent.append(word)
-                cur_tag.append(pos)
+                t1 = [word]
+                pre_pos = pos
             elif c == 'i':
                 t1.append(word)
                 pre_pos = pos
@@ -100,6 +104,10 @@ class DLTokenizer:
                     cur_tag.append(pre_pos)
                 t1 = [word]
                 pre_pos = pos
+
+        if len(t1) != 0:
+            cur_sent.append(''.join(t1))
+            cur_tag.append(pre_pos)
 
         return cur_sent, cur_tag
 
