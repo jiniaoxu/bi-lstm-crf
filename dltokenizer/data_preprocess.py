@@ -2,6 +2,7 @@ import os
 import re
 import argparse
 
+MAX_LEN_SIZE = 256
 
 def print_process(process):
     num_processed = int(30 * process)
@@ -57,18 +58,25 @@ def _parse_text(text: list):
         line, _ = re.subn('\\n', '', line)
         if line == '' or line == '\n':
             continue
-        bises.append(_tag(line))
+        words = re.split('\s+', line)
+
+        if len(words) > MAX_LEN_SIZE:
+            texts = re.split('[。？！.?!]/w', line)
+            if len(min(texts, key=len)) > MAX_LEN_SIZE:
+                continue
+            bises.extend(_parse_text(texts))
+        else:
+            bises.append(_tag(words))
     return bises
 
 
-def _tag(line):
+def _tag(words):
     """
     给指定的一行文本打上BIS标签
     :param line: 文本行
     :return:
     """
     bis = []
-    words = re.split('\s+', line)
     # words = list(map(list, words))
     pre_word = None
     for word in words:
